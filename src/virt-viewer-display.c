@@ -617,6 +617,36 @@ void virt_viewer_display_disable(VirtViewerDisplay *self)
     klass->disable(self);
 }
 
+/* This function returns the supported Video Codecs by client and server */
+GArray * virt_viewer_display_session_supported_codecs(VirtViewerDisplay *display)
+{
+    VirtViewerDisplayClass *klass;
+    if(display==0 || !VIRT_VIEWER_IS_DISPLAY(display)){
+        return NULL;
+    }
+
+    klass = VIRT_VIEWER_DISPLAY_GET_CLASS(display);
+    if (!klass->codecs)
+        return NULL;
+
+    return klass->codecs(display);
+}
+
+/* This function reqests a video codec change from the server */
+void virt_viewer_display_session_request_codec(VirtViewerDisplay *display, gint codec_id)
+{
+    VirtViewerDisplayClass *klass;
+    if(display==0 || !VIRT_VIEWER_IS_DISPLAY(display)){
+        return;
+    }
+
+    klass = VIRT_VIEWER_DISPLAY_GET_CLASS(display);
+    if (!klass->request_codec)
+        return;
+
+    return klass->request_codec(display,codec_id);
+}
+
 /* this function simply informs the display that it is enabled. see
  * virt_viewer_display_enable()/disable() if you want to attempt to change the
  * state of the display */

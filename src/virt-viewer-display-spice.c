@@ -58,6 +58,8 @@ static void virt_viewer_display_spice_release_cursor(VirtViewerDisplay *display)
 static gboolean virt_viewer_display_spice_selectable(VirtViewerDisplay *display);
 static void virt_viewer_display_spice_enable(VirtViewerDisplay *display);
 static void virt_viewer_display_spice_disable(VirtViewerDisplay *display);
+static GArray * virt_viewer_display_spice_get_session_supported_codecs(VirtViewerDisplay *display);
+static void virt_viewer_display_spice_request_codec(VirtViewerDisplay *display, gint codec_id);
 
 static void
 virt_viewer_display_spice_class_init(VirtViewerDisplaySpiceClass *klass)
@@ -70,6 +72,8 @@ virt_viewer_display_spice_class_init(VirtViewerDisplaySpiceClass *klass)
     dclass->selectable = virt_viewer_display_spice_selectable;
     dclass->enable = virt_viewer_display_spice_enable;
     dclass->disable = virt_viewer_display_spice_disable;
+    dclass->codecs = virt_viewer_display_spice_get_session_supported_codecs;
+    dclass->request_codec = virt_viewer_display_spice_request_codec;
 }
 
 static SpiceMainChannel*
@@ -400,4 +404,27 @@ virt_viewer_display_spice_set_desktop(VirtViewerDisplay *display,
     virt_viewer_display_queue_resize(display);
 
     g_signal_emit_by_name(display, "display-desktop-resize");
+}
+
+GArray * virt_viewer_display_spice_get_session_supported_codecs(VirtViewerDisplay *display) {
+    VirtViewerDisplaySpice *self = VIRT_VIEWER_DISPLAY_SPICE(display);
+        g_return_val_if_fail(self != NULL,NULL);
+        g_return_val_if_fail(self->display != NULL,NULL);
+        GArray * codec_ids = spice_display_channel_get_supported_codecs( SPICE_DISPLAY_CHANNEL(self->channel));
+        GArray * codecs = g_array_sized_new(FALSE,FALSE,sizeof(VirtViewerVideoCodec),codec_ids->len);
+        for (int i = 0; i < codec_ids->len; i++) {
+            int codec_id = g_array_index(codec_ids,int,i);
+            VirtViewerVideoCodec codec =  {.id=codec_id};
+            strncpy(codec.name, spice_display_get_codec_name(codec_id), sizeof(codec.name) - 1);
+            g_array_append_val(codecs, codec );
+        }
+        g_array_free(codec_ids,TRUE);
+        return codecs;
+    }
+
+void virt_viewer_display_spice_request_codec(VirtViewerDisplay *display,gint codec_id){
+    VirtViewerDisplaySpice *self = VIRT_VIEWER_DISPLAY_SPICE(display);
+    g_return_if_fail(self != NULL);
+    g_return_if_fail(self->display != NULL);
+    spice_display_channel_change_preferred_video_codec_type( self->channel, codec_id);
 }

@@ -41,6 +41,7 @@ typedef struct _VirtViewerSession       VirtViewerSession;
 typedef struct _VirtViewerSessionClass  VirtViewerSessionClass;
 
 typedef struct _VirtViewerDisplayChannel VirtViewerDisplayChannel;
+typedef struct _VirtViewerVideoCodec VirtViewerVideoCodec;
 
 typedef enum {
     VIRT_VIEWER_DISPLAY_SHOW_HINT_READY            = 1 << 0,
@@ -61,6 +62,13 @@ struct _VirtViewerDisplayClass {
     gboolean (*selectable)(VirtViewerDisplay *display);
     void (*enable)(VirtViewerDisplay *display);
     void (*disable)(VirtViewerDisplay *display);
+    GArray * (*codecs)(VirtViewerDisplay *display);
+    void (*request_codec)(VirtViewerDisplay *display,gint codec_id);
+};
+
+struct _VirtViewerVideoCodec {
+    char name[20];
+    gint id;
 };
 
 #define VIRT_VIEWER_DISPLAY_CAN_SCREENSHOT(display) \
@@ -104,6 +112,8 @@ void virt_viewer_display_close(VirtViewerDisplay *display);
 void virt_viewer_display_set_enabled(VirtViewerDisplay *display, gboolean enabled);
 void virt_viewer_display_enable(VirtViewerDisplay *display);
 void virt_viewer_display_disable(VirtViewerDisplay *display);
+GArray* virt_viewer_display_session_supported_codecs(VirtViewerDisplay *display);
+void virt_viewer_display_session_request_codec(VirtViewerDisplay *display, gint codec_id);
 gboolean virt_viewer_display_get_enabled(VirtViewerDisplay *display);
 gboolean virt_viewer_display_get_selectable(VirtViewerDisplay *display);
 void virt_viewer_display_queue_resize(VirtViewerDisplay *display);

@@ -1,0 +1,50 @@
+{
+	"folders": [
+		{
+			"path": "."
+		},
+		{
+			"path": "../spice-gtk"
+		},
+		{
+			"path": "../spice-protocol"
+		},
+		{
+			"path": "../gstreamer"
+		}
+	],
+	"settings": {
+		"C_Cpp.default.compileCommands": "/home/michael/Code/virt-viewer/build/compile_commands.json",
+		"files.associations": {
+			"string_view": "c",
+			"algorithm": "c",
+			"wayland.h": "c",
+			"gstwlcontext.h": "c",
+			"spice-widget.h": "c",
+			"spice-gtk-session-priv.h": "c",
+			"spice-gtk-session.h": "c",
+			"spice-client.h": "c",
+			"channel-display.h": "c",
+			"gst.h": "c",
+			"relative-pointer-unstable-v1-client-protocol.h": "c",
+			"spice-widget-priv.h": "c",
+			"gdkwaylanddisplay.h": "c",
+			"pointer-constraints-unstable-v1-client-protocol.h": "c",
+			"wayland-client-core.h": "c",
+			"wayland-extensions.h": "c",
+			"wayland-client.h": "c",
+			"wayland-client-protocol.h": "c",
+			"va_wayland.h": "c",
+			"gdkwayland.h": "c",
+			"gdkwaylanddevice.h": "c",
+			"cstdlib": "c",
+			"system_error": "c"
+		},
+		"C_Cpp.default.configurationProvider": "mesonbuild.mesonbuild",
+		"terminal.integrated.scrollback": 40000
+	},
+	"launch": {
+		"version": "0.2.0",
+		"configurations": [ ]
+	}
+}

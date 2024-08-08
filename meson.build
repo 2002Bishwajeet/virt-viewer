@@ -227,7 +227,7 @@ cc_flags += [
   '-Wnormalized=nfc',
   '-Wshift-overflow=2',
   '-Wstringop-overflow=2',
-  '-Wunused-const-variable=2',
+  #'-Wunused-const-variable=2',
   '-Wvla-larger-then=4031',
 ]
 

@@ -116,6 +116,7 @@ static void virt_viewer_app_action_monitor(GSimpleAction *act,
 static void virt_viewer_app_action_vte(GSimpleAction *act,
                                        GVariant *state,
                                        gpointer opaque);
+static void window_code_change_cb (GSimpleAction *action, GVariant *value, gpointer user_data);
 
 
 typedef struct _VirtViewerAppPrivate VirtViewerAppPrivate;
@@ -3145,6 +3146,51 @@ update_menu_displays_sort(gconstpointer a, gconstpointer b)
 }
 
 
+static void window_code_change_cb(GSimpleAction *action G_GNUC_UNUSED,
+                                  GVariant *value,
+                                  gpointer user_data) {
+    VirtViewerDisplay *display = (VirtViewerDisplay*) user_data;
+    virt_viewer_display_session_request_codec(display, g_variant_get_int32(value));
+}
+
+void window_menu_set_current_codec( VirtViewerApp *self, GVariant *value){
+    GAction * action = g_action_map_lookup_action(G_ACTION_MAP(self),"video-codec");
+    g_simple_action_set_state(G_SIMPLE_ACTION(action), value);
+}
+
+static void
+window_update_menu_video_codecs(gpointer value,
+                               gpointer user_data)
+{
+    VirtViewerApp *self = VIRT_VIEWER_APP(user_data);
+    VirtViewerWindow *window = VIRT_VIEWER_WINDOW(value);
+    GMenuModel *menu;
+    menu = virt_viewer_window_get_menu(window, "header-video-settings");
+    g_menu_remove_all(G_MENU(menu));
+    VirtViewerDisplay *display = virt_viewer_window_get_display(VIRT_VIEWER_WINDOW(window));
+    
+    GArray * codecs = virt_viewer_display_session_supported_codecs(display);
+    if(codecs == NULL){
+        return;
+    }
+    GSimpleAction * action = g_simple_action_new_stateful("video-codec",
+                                              G_VARIANT_TYPE_INT32,
+                                              g_variant_new_int32(1));
+
+    g_signal_connect(action, "change-state",
+                         G_CALLBACK(window_code_change_cb),
+                         display);
+    g_action_map_add_action(G_ACTION_MAP(self), G_ACTION(action));
+
+    for (int i= 0; i< codecs->len; i++){
+        VirtViewerVideoCodec * codec = &g_array_index(codecs, VirtViewerVideoCodec, i);
+        GMenuItem* item = g_menu_item_new(codec->name, NULL);
+        g_menu_item_set_action_and_target(item,"app.video-codec","i",codec->id);
+        g_menu_append_item(G_MENU(menu), item);
+    }    
+    g_array_free(codecs,TRUE);
+}
+
 static void
 window_update_menu_displays_cb(gpointer value,
                                gpointer user_data)
@@ -3159,7 +3205,7 @@ window_update_menu_displays_cb(gpointer value,
 
     keys = g_list_sort(keys, update_menu_displays_sort);
 
-    menu = virt_viewer_window_get_menu_displays(window);
+    menu = virt_viewer_window_get_menu(window, "header-machine");
     g_menu_remove_all(G_MENU(menu));
 
     tmp = keys;
@@ -3213,7 +3259,8 @@ virt_viewer_app_clear_window_actions(VirtViewerApp *self)
 
     for (i = 0; oldactions && oldactions[i] != NULL; i++) {
         if (g_str_has_prefix(oldactions[i], "monitor-") ||
-            g_str_has_prefix(oldactions[i], "vte-")) {
+            g_str_has_prefix(oldactions[i], "vte-") ||
+            g_str_has_prefix(oldactions[i], "video-codec")) {
             g_action_map_remove_action(G_ACTION_MAP(self), oldactions[i]);
         }
     }
@@ -3319,6 +3366,7 @@ virt_viewer_app_update_menu_displays(VirtViewerApp *self)
     virt_viewer_app_clear_window_actions(self);
     virt_viewer_app_create_window_actions(self);
     g_list_foreach(priv->windows, window_update_menu_displays_cb, self);
+    g_list_foreach(priv->windows, window_update_menu_video_codecs, self);
 }
 
 void

@@ -1,0 +1,4 @@
+{
+    "cmake.configureOnOpen": false,
+    "C_Cpp.default.compileCommands": "/home/michael/Code/virt-viewer/build/compile_commands.json"
+}

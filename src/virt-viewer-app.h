@@ -111,3 +111,4 @@ void virt_viewer_app_set_config_share_clipboard(VirtViewerApp *self, gboolean en
 
 gboolean virt_viewer_app_get_supports_share_clipboard(VirtViewerApp *self);
 void virt_viewer_app_set_supports_share_clipboard(VirtViewerApp *self, gboolean enable);
+void window_menu_set_current_codec( VirtViewerApp *self, GVariant *value);

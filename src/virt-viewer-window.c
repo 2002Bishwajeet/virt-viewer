@@ -566,6 +566,10 @@ virt_viewer_window_init (VirtViewerWindow *self)
     gtk_menu_button_set_menu_model(
         GTK_MENU_BUTTON(menu),
         G_MENU_MODEL(gtk_builder_get_object(menuBuilder, "machine-menu")));
+    menu = gtk_builder_get_object(self->builder, "header-video-settings");
+    gtk_menu_button_set_menu_model(
+        GTK_MENU_BUTTON(menu),
+        G_MENU_MODEL(gtk_builder_get_object(menuBuilder, "video-settings-menu"))); 
 
     menu = gtk_builder_get_object(self->builder, "toolbar-action");
     gtk_menu_button_set_menu_model(
@@ -576,6 +580,11 @@ virt_viewer_window_init (VirtViewerWindow *self)
     gtk_menu_button_set_menu_model(
         GTK_MENU_BUTTON(menu),
         G_MENU_MODEL(gtk_builder_get_object(menuBuilder, "machine-menu")));
+
+    menu = gtk_builder_get_object(self->builder, "toolbar-video-settings");
+    gtk_menu_button_set_menu_model(
+        GTK_MENU_BUTTON(menu),
+        G_MENU_MODEL(gtk_builder_get_object(menuBuilder, "video-settings-menu")));
 
     virt_viewer_window_update_title(self);
     gtk_window_set_resizable(GTK_WINDOW(self->window), TRUE);
@@ -1639,13 +1648,13 @@ gint virt_viewer_window_get_zoom_level(VirtViewerWindow *self)
 }
 
 GMenuModel *
-virt_viewer_window_get_menu_displays(VirtViewerWindow *self)
+virt_viewer_window_get_menu(VirtViewerWindow *self, const gchar * menu_name)
 {
     GObject *menu;
     GMenuModel *model;
     g_return_val_if_fail(VIRT_VIEWER_IS_WINDOW(self), NULL);
 
-    menu = gtk_builder_get_object(self->builder, "header-machine");
+    menu = gtk_builder_get_object(self->builder, menu_name);
     model = gtk_menu_button_get_menu_model(GTK_MENU_BUTTON(menu));
 
     return g_menu_model_get_item_link(model, 0, G_MENU_LINK_SECTION);

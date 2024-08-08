@@ -1,0 +1,106 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    //
+    "version": "0.2.0",
+    "configurations": [
+
+      {
+        "name": "Launch Virviewer",
+        "request": "launch",
+        "type": "cppdbg",
+        "linux": {
+          "MIMode": "gdb",
+          "setupCommands": [
+            {
+                "description": "Enable pretty-printing for gdb",
+                "text": "-enable-pretty-printing",
+                "ignoreFailures": true
+            },
+            {
+                "description": "ignore SIGUSR1 signal",
+                "text": "handle SIGUSR1 nostop noprint pass"
+            }
+          ],
+          "envFile": "${workspaceFolder}/${config:mesonbuild.buildFolder}/meson-vscode.env",
+        },
+        "environment": [//{"name":"LIBVA_DRIVER_NAME","value":"i915"},
+                       // {"name":"GST_PLUGIN_FEATURE_RANK","value":"vah265dec:MAX,msdkh265dec:MAX,vaapih265dec:MAX,vah264dec:MAX,msdkh264dec:MAX,vaapih264dec:MAX"},
+                       {"name":"GST_DEBUG_DUMP_DOT_DIR","value":"/home/michael/Documents/"},
+                       //{"name":"GST_DEBUG","value":"GST_TRACER:7"},
+                      // {"name":"GST_TRACERS","value":"latency(flags=element+pipeline+reported)"},
+                     //  {"name":"GST_DEBUG_FILE","value":"/home/michael/Documents/gst-lantency.log"},
+                       {"name":"SPICE_KEYPRESS_DELAY","value": "0"},
+                  //     {"name":"WAYLAND_DEBUG","value": "1"}
+                   //    {"name": "GTK_DEBUG","value":"interactive"}
+                        
+                      ],
+        
+        
+        "cwd": "${workspaceFolder}/${config:mesonbuild.buildFolder}",
+        "program": "${workspaceFolder}/${config:mesonbuild.buildFolder}/src/remote-viewer",
+        "args": [//"--spice-debug" export LIBVA_DRIVER_NAME=i915
+        ],
+    
+        "stopAtEntry": false,
+        "preLaunchTask": "Meson: Build all targets",
+        "symbolOptions": {
+          "searchPaths": [
+            "${workspaceFolder}/${config:mesonbuild.buildFolder}",
+          ],
+          "searchMicrosoftSymbolServer": true,
+          "cachePath": "${workspaceFolder}\\${config:mesonbuild.buildFolder}\\vscode-symbols-cache",
+          "moduleFilter": {
+            "mode": "loadAllButExcluded",
+            "excludedModules": []
+          }
+        }
+      },{
+        "name": "Remmina",
+        "request": "launch",
+        "type": "cppdbg",
+        "linux": {
+          "MIMode": "gdb",
+          "setupCommands": [
+          {
+            "description": "Enable pretty-printing for gdb",
+            "text": "-enable-pretty-printing",
+            "ignoreFailures": true
+          },
+          {
+            "description": "ignore SIGUSR1 signal",
+          }
+          ],
+          "envFile": "${workspaceFolder}/${config:mesonbuild.buildFolder}/meson-vscode.env",
+        },
+        "environment": [//{"name":"LIBVA_DRIVER_NAME","value":"i915"},
+                 // {"name":"GST_PLUGIN_FEATURE_RANK","value":"vah265dec:MAX,msdkh265dec:MAX,vaapih265dec:MAX,vah264dec:MAX,msdkh264dec:MAX,vaapih264dec:MAX"},
+                 //{"name":"GST_DEBUG_DUMP_DOT_DIR","value":"/home/michael/Documents/"},
+                // {"name":"GST_DEBUG","value":"GST_TRACER:7"},
+                 //{"name":"GST_TRACERS","value":"latency(flags=element+pipeline+reported)"},
+                 //{"name":"GST_DEBUG_FILE","value":"/home/michael/Documents/gst-lantency.log"},
+                 {"name": "SPICE_DISABLE_ADAPTIVE_STREAMING","value": "TRUE"}
+                ],
+        
+        
+        "cwd": "/opt/remmina_devel/remmina/bin/",
+        "program": "/opt/remmina_devel/remmina/bin/remmina",
+        "args": [//"--spice-debug" export LIBVA_DRIVER_NAME=i915
+        ],
+      
+        "stopAtEntry": false,
+        "symbolOptions": {
+          "searchPaths": [
+          "${workspaceFolder}/${config:mesonbuild.buildFolder}",
+          ],
+          "searchMicrosoftSymbolServer": true,
+          "cachePath": "${workspaceFolder}\\${config:mesonbuild.buildFolder}\\vscode-symbols-cache",
+          "moduleFilter": {
+          "mode": "loadAllButExcluded",
+          "excludedModules": []
+          }
+        }
+      }
+    ]
+  }

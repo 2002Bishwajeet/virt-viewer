@@ -65,4 +65,8 @@
       </item>
     </section>
   </menu>
+  <menu id="video-settings-menu">
+  <section>
+    </section>
+  </menu>
 </interface>

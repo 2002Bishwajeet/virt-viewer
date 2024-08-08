@@ -1217,6 +1217,14 @@ spice_port_opened(SpiceChannel *channel, GParamSpec *pspec G_GNUC_UNUSED,
     }
 }
 
+static void 
+codec_changed(SpiceChannel *channel, G_GNUC_UNUSED gint id, gint codec_type, VirtViewerApp *self)
+{
+    g_return_if_fail(channel!=NULL);
+    g_return_if_fail(self!=NULL);
+    window_menu_set_current_codec(self, g_variant_new_int32(codec_type));
+}
+
 static void
 virt_viewer_session_spice_channel_new(SpiceSession *s,
                                       SpiceChannel *channel,
@@ -1262,6 +1270,8 @@ virt_viewer_session_spice_channel_new(SpiceSession *s,
         virt_viewer_signal_connect_object(channel, "notify::monitors",
                                           G_CALLBACK(virt_viewer_session_spice_display_monitors), self, 0);
 
+        g_signal_connect(SPICE_DISPLAY_CHANNEL(channel), "stream-created",
+                         G_CALLBACK(codec_changed), virt_viewer_session_get_app(VIRT_VIEWER_SESSION(session))); 
         spice_channel_connect(channel);
     }
 
