@@ -1,0 +1,97 @@
+build-appimage:
+  stage: build
+  image: rockylinux:9
+  script:
+    - dnf upgrade -y
+    - dnf install -y epel-release
+    - dnf --enablerepo=crb install -y
+      wget
+      git
+      gcc
+      gcc-c++
+      flex
+      bison
+      wayland-devel
+      openssl-devel
+      gtk3-devel
+      libdrm-devel
+      openssl-devel
+      gtk3-devel
+      opus-devel
+      libcurl-devel
+      file
+      libjpeg-turbo-devel
+      nasm
+      libva-utils
+      patchelf
+      intel-mediasdk-devel
+      libgudev-devel
+      libva-devel
+      python3-pip
+    - pip3 install meson ninja pyparsing six
+
+    - git clone https://github.com/GNOME/glib.git
+    - meson setup --prefix=/usr glib/build glib
+      -Dsysprof=enabled
+      -Dglib_debug=disabled
+    - ninja -C glib/build install
+
+    - git clone https://gitlab.freedesktop.org/gstreamer/gstreamer.git
+    - meson setup --prefix=/usr gstreamer/build gstreamer
+      -Dbad=enabled
+      -Dgst-plugins-base:pango=disabled
+      -Dgst-plugins-good:jpeg=disabled
+      -Dgst-plugins-bad:openjpeg=disabled
+      -Dgst-plugins-bad:jpegformat=disabled
+      -Dgst-plugins-bad:va=enabled
+      -Dgst-plugins-bad:wayland=enabled
+      -Dgst-plugins-bad:msdk=enabled
+      -Dgst-plugins-bad:aja=disabled
+      -Dgst-plugins-base:opus=disabled
+      -Dgpl=enabled
+    - ninja -C gstreamer/build install
+
+    - git clone -b new_video_codecs https://gitlab.uni-freiburg.de/opensourcevdi/spice-protocol.git
+    - meson setup --prefix=/usr spice-protocol/build spice-protocol
+    - ninja -C spice-protocol/build install
+
+    - git clone -b queueu_remove_experiment https://gitlab.uni-freiburg.de/opensourcevdi/spice-gtk.git
+    - meson setup --prefix=/usr spice-gtk/build spice-gtk
+      -Dwayland-protocols=enabled
+      -Dbuiltin-mjpeg=false
+      -Dopus=enabled
+      -Dgtk=enabled
+      --debug
+      --buildtype=debug
+    - ninja -C spice-gtk/build install
+
+    - mkdir -p AppDir
+    - meson setup --prefix=/usr build
+      -Dspice=enabled
+      --debug
+      --buildtype=debug
+    - DESTDIR="$PWD/AppDir" ninja -C build install
+
+    - download() { wget -- "$1"; chmod +x -- "${1##*/}"; }
+    - download https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage
+    - download https://raw.githubusercontent.com/linuxdeploy/linuxdeploy-plugin-gstreamer/refs/heads/master/linuxdeploy-plugin-gstreamer.sh
+    - download https://raw.githubusercontent.com/linuxdeploy/linuxdeploy-plugin-gtk/master/linuxdeploy-plugin-gtk.sh
+
+    # patch plugins to accept an exclude library env variable
+    - sed -Ei '/^(env .* )?"\$LINUXDEPLOY"/s/$/ --exclude-library "$LINUXDEPLOY_EXCLUDE_LIBRARY"/' linuxdeploy-plugin-*.sh
+    # remove the GDK_BACKEND variable since it prevents autoscaling on Wayland (and it does not crash on Wayland)
+    - sed -i '/export GDK_BACKEND=x11/d' linuxdeploy-plugin-gtk.sh
+
+    - export
+      LINUXDEPLOY_EXCLUDE_LIBRARY="*libva*"
+      GSTREAMER_PLUGINS_DIR=/usr/lib64/gstreamer-1.0
+      GSTREAMER_HELPERS_DIR=/usr/libexec/gstreamer-1.0
+      GSTREAMER_INCLUDE_BAD_PLUGINS=1
+      NO_STRIP=1
+    - ./linuxdeploy-x86_64.AppImage --appimage-extract-and-run --appdir AppDir
+      --exclude-library "$LINUXDEPLOY_EXCLUDE_LIBRARY"
+      --plugin gtk --plugin gstreamer --output appimage
+
+  artifacts:
+    paths:
+      - Remote_Viewer-x86_64.AppImage
