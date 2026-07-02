@@ -28,7 +28,13 @@ build-appimage:
       libgudev-devel
       libva-devel
       python3-pip
+      expat-devel
     - pip3 install meson ninja pyparsing six
+
+    - git clone https://gitlab.freedesktop.org/wayland/wayland.git
+    - meson setup --prefix=/usr wayland/build wayland
+      -Ddocumentation=false
+    - ninja -C wayland/build install
 
     - git clone https://github.com/GNOME/glib.git
     - meson setup --prefix=/usr glib/build glib
