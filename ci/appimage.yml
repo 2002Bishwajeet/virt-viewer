@@ -1,6 +1,14 @@
 build-appimage:
   stage: build
   image: rockylinux:9
+  variables:
+    # Dependency clone refs; leave empty to build from the project's default branch.
+    # Not GSTREAMER_VERSION: linuxdeploy reads that as the GStreamer ABI version.
+    GLIB_REF: ""
+    GSTREAMER_REF: ""
+    SPICE_PROTOCOL_REF: "new_video_codecs"
+    SPICE_GTK_REF: "queueu_remove_experiment"
+    WAYLAND_REF: ""
   script:
     - dnf upgrade -y
     - dnf install -y epel-release
@@ -31,18 +39,18 @@ build-appimage:
       expat-devel
     - pip3 install meson ninja pyparsing six
 
-    - git clone https://gitlab.freedesktop.org/wayland/wayland.git
+    - git clone ${WAYLAND_REF:+-b "$WAYLAND_REF"} https://gitlab.freedesktop.org/wayland/wayland.git
     - meson setup --prefix=/usr wayland/build wayland
       -Ddocumentation=false
     - ninja -C wayland/build install
 
-    - git clone https://github.com/GNOME/glib.git
+    - git clone -vv ${GLIB_REF:+-b "$GLIB_REF"} https://github.com/GNOME/glib.git
     - meson setup --prefix=/usr glib/build glib
       -Dsysprof=enabled
       -Dglib_debug=disabled
     - ninja -C glib/build install
 
-    - git clone https://gitlab.freedesktop.org/gstreamer/gstreamer.git
+    - git clone -vv ${GSTREAMER_REF:+-b "$GSTREAMER_REF"} https://gitlab.freedesktop.org/gstreamer/gstreamer.git
     - meson setup --prefix=/usr gstreamer/build gstreamer
       -Dbad=enabled
       -Dgst-plugins-base:pango=disabled
@@ -57,11 +65,11 @@ build-appimage:
       -Dgpl=enabled
     - ninja -C gstreamer/build install
 
-    - git clone -b new_video_codecs https://gitlab.uni-freiburg.de/opensourcevdi/spice-protocol.git
+    - git clone -vv ${SPICE_PROTOCOL_REF:+-b "$SPICE_PROTOCOL_REF"} https://gitlab.uni-freiburg.de/opensourcevdi/spice-protocol.git
     - meson setup --prefix=/usr spice-protocol/build spice-protocol
     - ninja -C spice-protocol/build install
 
-    - git clone -b queueu_remove_experiment https://gitlab.uni-freiburg.de/opensourcevdi/spice-gtk.git
+    - git clone -vv ${SPICE_GTK_REF:+-b "$SPICE_GTK_REF"} https://gitlab.uni-freiburg.de/opensourcevdi/spice-gtk.git
     - meson setup --prefix=/usr spice-gtk/build spice-gtk
       -Dwayland-protocols=enabled
       -Dbuiltin-mjpeg=false
@@ -71,7 +79,32 @@ build-appimage:
       --buildtype=debug
     - ninja -C spice-gtk/build install
 
-    - mkdir -p AppDir
+    - mkdir -p AppDir/apprun-hooks
+    - |
+      cat >AppDir/apprun-hooks/ca-certificates.sh <<'EOF'
+      # The bundled OpenSSL shall use the host's root CAs for TLS verification.
+      # Try to find the host's root certificates using the same list Go uses.
+      # Source: https://github.com/golang/go/blob/63d836396a47651fbdbb8cd1fa07749e29f8b844/src/crypto/x509/root_linux.go#L10
+
+      if [ -z "${SSL_CERT_FILE:-}" ]; then
+          for _ca in \
+              /etc/ssl/certs/ca-certificates.crt \
+              /etc/pki/tls/certs/ca-bundle.crt \
+              /etc/ssl/ca-bundle.pem \
+              /etc/pki/tls/cacert.pem \
+              /etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem \
+              /etc/ssl/cert.pem; do
+              if [ -r "$_ca" ]; then
+                  export SSL_CERT_FILE="$_ca"
+                  break
+              fi
+          done
+      fi
+      if [ -z "${SSL_CERT_DIR:-}" ]; then
+        export SSL_CERT_DIR=/etc/ssl/certs:/etc/pki/tls/certs
+      fi
+      EOF
+
     - meson setup --prefix=/usr build
       -Dspice=enabled
       --debug
