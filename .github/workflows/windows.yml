@@ -58,6 +58,10 @@ jobs:
         run: |
           set -eu
           git clone --depth 1 -b queueu_remove_experiment https://gitlab.uni-freiburg.de/opensourcevdi/spice-gtk.git
+          # Shallow clone has no tags, so git-version-gen yields UNKNOWN and the
+          # patch marks the tree dirty -> "UNKNOWN-dirty", which fails virt-viewer's
+          # >=0.35 check. git-version-gen reads .tarball-version verbatim if present.
+          echo '0.42' > spice-gtk/.tarball-version
           git -C spice-gtk apply --ignore-whitespace "$PWD/ci/spice-gtk-windows.patch"
           meson setup --prefix=/ucrt64 spice-gtk/build spice-gtk \
             -Dgtk=enabled \
