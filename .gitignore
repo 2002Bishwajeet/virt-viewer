@@ -1,0 +1,9 @@
+# Build directories
+/build/
+/build-win/
+
+# CI: cloned SPICE forks + packaged output (see .github/workflows/windows.yml)
+/spice-gtk/
+/spice-protocol/
+/remote-viewer-portable/
+/Remote_Viewer-x86_64.AppImage
