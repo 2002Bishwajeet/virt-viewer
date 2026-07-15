@@ -1,0 +1,54 @@
+diff --git a/meson.build b/meson.build
+index 36adb47..3399ea8 100644
+--- a/meson.build
++++ b/meson.build
+@@ -208,7 +208,12 @@ summary_info += {'webdav': spice_gtk_has_phodav}
+
+ gstreamer_version = '1.10'
+ gstreamer_version_info = '>= @0@'.format(gstreamer_version)
+-deps = ['gstreamer-1.0', 'gstreamer-base-1.0', 'gstreamer-app-1.0', 'gstreamer-audio-1.0', 'gstreamer-video-1.0', 'gstreamer-wayland-1.0','libva-wayland']
++deps = ['gstreamer-1.0', 'gstreamer-base-1.0', 'gstreamer-app-1.0', 'gstreamer-audio-1.0', 'gstreamer-video-1.0']
++# gstreamer-wayland / libva-wayland back the Linux Wayland+VA-API HW decode path
++# and do not exist on Windows (where GPU decode goes through d3d11 instead).
++if host_machine.system() != 'windows'
++  deps += ['gstreamer-wayland-1.0', 'libva-wayland']
++endif
+ foreach dep : deps
+   spice_glib_deps += dependency(dep, version: gstreamer_version_info)
+ endforeach
+diff --git a/src/channel-display-gst.c b/src/channel-display-gst.c
+index e8d3e3c..14b2ddb 100755
+--- a/src/channel-display-gst.c
++++ b/src/channel-display-gst.c
+@@ -654,6 +654,7 @@ static gboolean create_pipeline(SpiceGstDecoder *decoder, bool try_hw_pipeline)
+     GstCaps *caps;
+     static bool playbin3_supported = true;
+    // try_hw_pipeline = false;
++#ifndef G_OS_WIN32
+     GpuVendor vendor = spice_udev_detect_gpu(INTEL_VENDOR_ID);
+     if (vendor == VENDOR_GPU_DETECTED ||
+         vendor == VENDOR_GPU_UNKNOWN) {
+@@ -661,6 +662,7 @@ static gboolean create_pipeline(SpiceGstDecoder *decoder, bool try_hw_pipeline)
+             return TRUE;
+         }
+     }
++#endif
+
+     playbin = playbin3_supported ?
+               gst_element_factory_make("playbin3", "playbin") : NULL;
+diff --git a/src/spice-widget.h b/src/spice-widget.h
+index 5fce8ed..31e2a51 100644
+--- a/src/spice-widget.h
++++ b/src/spice-widget.h
+@@ -23,7 +23,11 @@
+
+ #include "spice-client.h"
+ #define GST_USE_UNSTABLE_API
++#ifndef G_OS_WIN32
++/* GStreamer Wayland context backs the Linux Wayland/DMABuf HW decode path;
++ * not present on Windows (GPU decode goes through d3d11 there). */
+ #include <gst/wayland/gstwlcontext.h>
++#endif
+
+ #include <gtk/gtk.h>
+ #include "spice-grabsequence.h"

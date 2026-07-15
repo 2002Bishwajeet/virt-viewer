@@ -1,0 +1,92 @@
+name: windows-build
+
+# Native Windows build of the virt-viewer fork with GPU-accelerated video
+# decode. Runs on GitHub's windows-latest runner via MSYS2 UCRT64 — the same
+# toolchain (MinGW-w64) + prebuilt GTK/GStreamer stack proven to work locally.
+# GPU decode comes for free: GStreamer's decodebin3 auto-plugs the d3d12/d3d11
+# decoders that gst-plugins-bad ships, falling back to software only if the GPU
+# link fails. The two SPICE forks are built from source (the video-codec feature
+# is welded to them); the Windows portability patch is applied over spice-gtk.
+
+on:
+  push:
+    branches: [ main, dev ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: msys2 {0}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: msys2/setup-msys2@v2
+        with:
+          msystem: UCRT64
+          update: true
+          # spice-gtk3 is installed only to pull the full transitive build-dep
+          # closure (json-glib, usbredir, jpeg, pixman, openssl, ...); our forks
+          # are rebuilt over the top into /ucrt64.
+          install: >-
+            git
+            mingw-w64-ucrt-x86_64-gcc
+            mingw-w64-ucrt-x86_64-pkgconf
+            mingw-w64-ucrt-x86_64-meson
+            mingw-w64-ucrt-x86_64-ninja
+            mingw-w64-ucrt-x86_64-gtk3
+            mingw-w64-ucrt-x86_64-libxml2
+            mingw-w64-ucrt-x86_64-opus
+            mingw-w64-ucrt-x86_64-gstreamer
+            mingw-w64-ucrt-x86_64-gst-plugins-base
+            mingw-w64-ucrt-x86_64-gst-plugins-good
+            mingw-w64-ucrt-x86_64-gst-plugins-bad
+            mingw-w64-ucrt-x86_64-gst-libav
+            mingw-w64-ucrt-x86_64-spice-gtk3
+
+      - name: Build spice-protocol fork
+        run: |
+          set -eu
+          git clone --depth 1 -b new_video_codecs https://gitlab.uni-freiburg.de/opensourcevdi/spice-protocol.git
+          meson setup --prefix=/ucrt64 spice-protocol/build spice-protocol
+          ninja -C spice-protocol/build install
+
+      - name: Build spice-gtk fork (with Windows patch)
+        run: |
+          set -eu
+          git clone --depth 1 -b queueu_remove_experiment https://gitlab.uni-freiburg.de/opensourcevdi/spice-gtk.git
+          git -C spice-gtk apply "$PWD/ci/spice-gtk-windows.patch"
+          meson setup --prefix=/ucrt64 spice-gtk/build spice-gtk \
+            -Dgtk=enabled \
+            -Dbuiltin-mjpeg=false \
+            -Dopus=enabled \
+            -Dwayland-protocols=disabled \
+            -Dintrospection=disabled \
+            -Dvapi=disabled
+          ninja -C spice-gtk/build install
+
+      - name: Build virt-viewer
+        run: |
+          set -eu
+          meson setup --prefix=/ucrt64 build-win \
+            -Dspice=enabled \
+            -Dlibvirt=disabled \
+            -Dovirt=disabled \
+            -Dvnc=disabled \
+            -Dvte=disabled \
+            -Dbash_completion=disabled \
+            -Dgit_werror=disabled
+          ninja -C build-win
+
+      - name: Package portable bundle
+        run: |
+          set -eu
+          EXE="$PWD/build-win/src/remote-viewer.exe" \
+          DEST="$PWD/remote-viewer-portable" \
+          bash ci/package-windows.sh
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: remote-viewer-portable
+          path: remote-viewer-portable
