@@ -37,6 +37,7 @@ jobs:
             mingw-w64-ucrt-x86_64-ninja
             mingw-w64-ucrt-x86_64-python-six
             mingw-w64-ucrt-x86_64-python-pyparsing
+            mingw-w64-ucrt-x86_64-icoutils
             mingw-w64-ucrt-x86_64-gtk3
             mingw-w64-ucrt-x86_64-libxml2
             mingw-w64-ucrt-x86_64-opus
