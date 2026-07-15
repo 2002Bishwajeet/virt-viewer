@@ -53,12 +53,15 @@ mkdir -p "$DEST/lib/gdk-pixbuf-2.0/2.10.0/loaders"
 cp "$UCRT"/lib/gdk-pixbuf-2.0/2.10.0/loaders/*.dll "$DEST/lib/gdk-pixbuf-2.0/2.10.0/loaders/"
 for l in "$DEST"/lib/gdk-pixbuf-2.0/2.10.0/loaders/*.dll; do resolve "$l"; done
 # query-loaders emits absolute build-time paths (D:/a/... in CI) which don't
-# exist on the target machine. Rewrite them relative to the cache dir — gdk-pixbuf
-# 2.44 resolves relative loader paths against the .cache file's directory, so the
-# bundle is portable to wherever it's extracted (verified: FORMATS=32).
+# exist on the target machine. Rewrite them RELATIVE TO THE BUNDLE ROOT: on
+# Windows gdk-pixbuf resolves a relative loader path against its own package
+# install dir (the parent of bin/, where libgdk_pixbuf lives), NOT the cache
+# dir. So paths must start at lib/... for the bundle to be relocatable. Getting
+# this wrong makes the svg loader unfindable -> GTK hard-aborts on the first
+# themed (SVG) icon. Verified: no icon errors, no crash.
 GDK_PIXBUF_MODULEDIR="$DEST/lib/gdk-pixbuf-2.0/2.10.0/loaders" \
   "$UCRT"/bin/gdk-pixbuf-query-loaders.exe \
-  | sed -E 's|^"[^"]*/loaders/|"loaders/|' \
+  | sed -E 's|^"[^"]*/(lib/gdk-pixbuf-2.0/2.10.0/loaders/)|"\1|' \
   > "$DEST/lib/gdk-pixbuf-2.0/2.10.0/loaders.cache"
 
 # --- GSettings schemas -------------------------------------------------------
