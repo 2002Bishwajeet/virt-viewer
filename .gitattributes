@@ -1,0 +1,2 @@
+# Patches must stay LF-only, or `git apply` fails on CRLF-corrupted context.
+*.patch -text
