@@ -52,8 +52,13 @@ echo ">> Copying gdk-pixbuf loaders"
 mkdir -p "$DEST/lib/gdk-pixbuf-2.0/2.10.0/loaders"
 cp "$UCRT"/lib/gdk-pixbuf-2.0/2.10.0/loaders/*.dll "$DEST/lib/gdk-pixbuf-2.0/2.10.0/loaders/"
 for l in "$DEST"/lib/gdk-pixbuf-2.0/2.10.0/loaders/*.dll; do resolve "$l"; done
+# query-loaders emits absolute build-time paths (D:/a/... in CI) which don't
+# exist on the target machine. Rewrite them relative to the cache dir — gdk-pixbuf
+# 2.44 resolves relative loader paths against the .cache file's directory, so the
+# bundle is portable to wherever it's extracted (verified: FORMATS=32).
 GDK_PIXBUF_MODULEDIR="$DEST/lib/gdk-pixbuf-2.0/2.10.0/loaders" \
   "$UCRT"/bin/gdk-pixbuf-query-loaders.exe \
+  | sed -E 's|^"[^"]*/loaders/|"loaders/|' \
   > "$DEST/lib/gdk-pixbuf-2.0/2.10.0/loaders.cache"
 
 # --- GSettings schemas -------------------------------------------------------
