@@ -13,6 +13,8 @@ set -u
 UCRT="${UCRT:-/ucrt64}"
 EXE="${EXE:-$PWD/build-win/src/remote-viewer.exe}"
 DEST="${DEST:-$PWD/remote-viewer-portable}"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+BUILDROOT="$(dirname "$(dirname "$EXE")")"   # .../build-win (holds icons/virt-viewer.ico)
 
 echo ">> Resetting $DEST"
 rm -rf "$DEST"
@@ -82,21 +84,21 @@ echo ">> Copying CA bundle"
 mkdir -p "$DEST/ssl/certs"
 cp "$UCRT"/etc/ssl/certs/ca-bundle.crt "$DEST/ssl/certs/" 2>/dev/null || true
 
-# --- Launcher ----------------------------------------------------------------
-echo ">> Writing launcher"
-cat > "$DEST/remote-viewer.bat" <<'BAT'
-@echo off
-set "HERE=%~dp0"
-set "PATH=%HERE%bin;%PATH%"
-set "GST_PLUGIN_PATH=%HERE%lib\gstreamer-1.0"
-set "GST_PLUGIN_SYSTEM_PATH=%HERE%lib\gstreamer-1.0"
-set "GST_PLUGIN_SCANNER=%HERE%bin\gst-plugin-scanner.exe"
-set "GDK_PIXBUF_MODULE_FILE=%HERE%lib\gdk-pixbuf-2.0\2.10.0\loaders.cache"
-set "GSETTINGS_SCHEMA_DIR=%HERE%share\glib-2.0\schemas"
-set "XDG_DATA_DIRS=%HERE%share"
-set "SSL_CERT_FILE=%HERE%ssl\certs\ca-bundle.crt"
-start "" "%HERE%bin\remote-viewer.exe" %*
-BAT
+# --- Launcher exe ------------------------------------------------------------
+# A native GUI launcher at the bundle root that sets the env the exe can't
+# self-relocate (OpenSSL CA bundle for TLS + GStreamer plugin paths) and spawns
+# bin/remote-viewer.exe. GUI subsystem => no console flash; carries the app icon.
+echo ">> Building launcher exe"
+ICON="$BUILDROOT/icons/virt-viewer.ico"
+tmp="$(mktemp -d)"
+res=""
+if [ -f "$ICON" ]; then
+  cp "$ICON" "$tmp/app.ico"
+  echo '1 ICON "app.ico"' > "$tmp/launcher.rc"
+  ( cd "$tmp" && windres launcher.rc launcher_res.o ) && res="$tmp/launcher_res.o"
+fi
+gcc "$SCRIPT_DIR/launcher.c" $res -o "$DEST/remote-viewer.exe" -mwindows -municode -O2 -s
+rm -rf "$tmp"
 
 echo ">> DONE"
 echo ">> DLLs bundled: $(ls "$DEST"/bin/*.dll | wc -l)"
