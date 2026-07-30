@@ -18,6 +18,13 @@
 
   <?if $(var.HaveSpiceGtk) = "True"?>
     <?require spice-gtk3.wxi?>
+    <!-- spice-glib.wxi only pulls in CG.gstreamer1, which is the core library
+         plus coreelements. Without these three groups the MSI ships no
+         playback/typefind plugins (so playbin3 cannot auto-plug anything) and
+         no D3D11/D3D12 decoders (so there is no GPU decode on Windows). -->
+    <?require gstreamer1-plugins-base.wxi?>
+    <?require gstreamer1-plugins-good.wxi?>
+    <?require gstreamer1-plugins-bad-free.wxi?>
   <?endif?>
   <?if $(var.HaveGtkVnc) = "True"?>
     <?require gtk-vnc2.wxi?>
@@ -103,6 +110,9 @@
     <Feature Id="Complete"  Level="1">
       <?if $(var.HaveSpiceGtk) = "True"?>
         <ComponentGroupRef Id="CG.spice-gtk3"/>
+        <ComponentGroupRef Id="CG.gstreamer1-plugins-base"/>
+        <ComponentGroupRef Id="CG.gstreamer1-plugins-good"/>
+        <ComponentGroupRef Id="CG.gstreamer1-plugins-bad-free"/>
       <?endif?>
       <?if $(var.HaveGtkVnc) = "True"?>
         <ComponentGroupRef Id="CG.gtk-vnc2"/>

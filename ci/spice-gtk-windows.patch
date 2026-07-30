@@ -1,0 +1,35 @@
+diff --git a/meson.build b/meson.build
+index 36adb47..0292382 100644
+--- a/meson.build
++++ b/meson.build
+@@ -208,7 +208,12 @@ summary_info += {'webdav': spice_gtk_has_phodav}
+ 
+ gstreamer_version = '1.10'
+ gstreamer_version_info = '>= @0@'.format(gstreamer_version)
+-deps = ['gstreamer-1.0', 'gstreamer-base-1.0', 'gstreamer-app-1.0', 'gstreamer-audio-1.0', 'gstreamer-video-1.0', 'gstreamer-wayland-1.0','libva-wayland']
++deps = ['gstreamer-1.0', 'gstreamer-base-1.0', 'gstreamer-app-1.0', 'gstreamer-audio-1.0', 'gstreamer-video-1.0']
++# gstreamer-wayland-1.0 and libva-wayland have no Windows implementation;
++# the code using them is already behind GDK_WINDOWING_X11/WAYLAND guards.
++if host_machine.system() != 'windows'
++  deps += ['gstreamer-wayland-1.0', 'libva-wayland']
++endif
+ foreach dep : deps
+   spice_glib_deps += dependency(dep, version: gstreamer_version_info)
+ endforeach
+diff --git a/src/spice-widget.h b/src/spice-widget.h
+index 5fce8ed..eb856fb 100644
+--- a/src/spice-widget.h
++++ b/src/spice-widget.h
+@@ -22,8 +22,12 @@
+ #endif
+ 
+ #include "spice-client.h"
++#ifndef G_OS_WIN32
++/* gst/wayland is not built for Windows; the only consumer of it in
++ * spice-widget.c is inside #if defined(GDK_WINDOWING_X11). */
+ #define GST_USE_UNSTABLE_API
+ #include <gst/wayland/gstwlcontext.h>
++#endif
+ 
+ #include <gtk/gtk.h>
+ #include "spice-grabsequence.h"
