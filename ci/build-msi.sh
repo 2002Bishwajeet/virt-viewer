@@ -10,7 +10,7 @@
 # Self-contained on a bare Fedora image: stage_deps installs everything, so the
 # same script drives ci/msi.yml and a local "podman run fedora:44" reproduction.
 #
-# Stages:  deps | protocol | gtk | viewer | wxi | msi | all
+# Stages:  deps | protocol | gtk | viewer | wxi | caches | msi | all
 set -euo pipefail
 
 PREFIX=/usr/x86_64-w64-mingw32/sys-root/mingw
@@ -44,7 +44,7 @@ stage_deps() {
     dnf install -y \
         git meson ninja-build gcc make python3 \
         glib2-devel icoutils dos2unix perl-podlators \
-        glibc-langpack-en msitools hwdata
+        glibc-langpack-en msitools hwdata gtk-update-icon-cache
     # Fedora already knows what spice-gtk needs to build; don't hand-maintain a list.
     # This also drags in most of what virt-viewer itself needs (mingw64-gcc, -gtk3,
     # -glib2, -pkg-config). Fedora retired mingw-virt-viewer, so there is no
@@ -112,11 +112,35 @@ stage_viewer() {
 
 stage_wxi() { "$SRC/ci/gen-missing-wxi.sh"; }
 
+stage_caches() {
+    # Both caches come from rpm file triggers, so no package owns them and
+    # wixl-heat never sees them. msitool.py walks the vroot, so writing them
+    # there is enough. gschemas.compiled is the fatal one: GSettings reads only
+    # the compiled blob, and GTK3 and gio g_error() (abort, no message box) on a
+    # lookup miss -- that is why remote-viewer.exe died before drawing a window.
+    install -d "$VROOT$PREFIX/share/glib-2.0/schemas"
+    glib-compile-schemas --targetdir="$VROOT$PREFIX/share/glib-2.0/schemas" \
+                         "$PREFIX/share/glib-2.0/schemas"
+
+    # The icon caches are only a startup-speed win. Built in place and copied out
+    # one file at a time, because copying the theme trees in would duplicate files
+    # the .wxi groups already ship, and libmsi rejects that.
+    for theme in Adwaita hicolor; do
+        d="$PREFIX/share/icons/$theme"
+        [ -f "$d/index.theme" ] || continue
+        # An empty theme still exits 0 without writing a cache, so test for it.
+        gtk-update-icon-cache -qtf "$d" || true
+        [ -f "$d/icon-theme.cache" ] || continue
+        install -Dm644 "$d/icon-theme.cache" "$VROOT$d/icon-theme.cache"
+    done
+}
+
 stage_msi() {
     cd "$WORK/virt-viewer"; rm -rf "$VROOT"
     # Both DESTDIR lines matter: msitool.py hard-errors without DESTDIR and walks
     # that tree to build the wixl-heat manifest, so the install must land there first.
     DESTDIR="$VROOT" ninja -C build install
+    stage_caches
     DESTDIR="$VROOT" ninja -C build "data/virt-viewer-x64-11.0.msi"
     # Hand the artifact back to the checkout so CI's artifacts:paths can collect it.
     cp build/data/*.msi "$SRC/"
@@ -129,6 +153,7 @@ case "${1:-all}" in
     gtk)      stage_gtk ;;
     viewer)   stage_viewer ;;
     wxi)      stage_wxi ;;
+    caches)   stage_caches ;;
     msi)      stage_msi ;;
     all)      stage_deps; stage_protocol; stage_gtk; stage_viewer; stage_wxi; stage_msi ;;
     *)        echo "unknown stage: $1" >&2; exit 1 ;;
