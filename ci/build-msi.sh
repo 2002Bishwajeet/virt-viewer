@@ -14,6 +14,8 @@
 set -euo pipefail
 
 PREFIX=/usr/x86_64-w64-mingw32/sys-root/mingw
+# Must match meson.build's wixl_arch; the MSI filename is built from it.
+MSI_ARCH=${MSI_ARCH:-x64}
 # Default to the checkout this script lives in, so CI (where the clone is the cwd)
 # and a bind-mounted local run both work without being told.
 SRC=${SRC:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}
@@ -141,10 +143,18 @@ stage_msi() {
     # that tree to build the wixl-heat manifest, so the install must land there first.
     DESTDIR="$VROOT" ninja -C build install
     stage_caches
-    DESTDIR="$VROOT" ninja -C build "data/virt-viewer-x64-11.0.msi"
+    # The msi target is build_by_default:false, so it has to be named exactly.
+    # Read the version from meson; hardcoding it turns a version bump into an
+    # "unknown target" failure far from the change that caused it.
+    local version msi
+    version=$(meson introspect build --projectinfo |
+              python3 -c 'import json,sys; print(json.load(sys.stdin)["version"])')
+    msi="virt-viewer-$MSI_ARCH-$version.msi"
+    echo "building data/$msi"
+    DESTDIR="$VROOT" ninja -C build "data/$msi"
     # Hand the artifact back to the checkout so CI's artifacts:paths can collect it.
-    cp build/data/*.msi "$SRC/"
-    ls -la "$SRC"/*.msi
+    cp "build/data/$msi" "$SRC/"
+    ls -la "$SRC/$msi"
 }
 
 case "${1:-all}" in
