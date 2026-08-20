@@ -53,7 +53,9 @@ stage_deps() {
     # virt-viewer's own cross-build deps not covered by the spice-gtk closure.
     # mingw64-spice-gtk3 is installed even though we build our own over the top of
     # it: msitools' spice-gtk3.wxi is written against this package's file list.
-    dnf install -y mingw64-spice-gtk3 mingw64-libxml2 mingw64-gettext
+    # mingw64-libjpeg-turbo backs spice-gtk's builtin MJPEG decoder (see stage_gtk).
+    dnf install -y mingw64-spice-gtk3 mingw64-libxml2 mingw64-gettext \
+        mingw64-libjpeg-turbo
     # Runtime pieces the MSI's .wxi require-closure pulls in. These are listed in
     # mingw-virt-viewer.spec.in BuildRequires but are absent from the lcitool CI
     # image, because that image was only ever used to compile, never to package.
@@ -84,8 +86,11 @@ stage_gtk() {
     # msitools' spice-gtk3.wxi hardcodes (libspice-client-gtk-3.0-5.dll et al).
     echo 0.43 > .tarball-version
     cd "$WORK"
+    # Fedora ships no software video decoder for mingw64 (no libav, openh264,
+    # libvpx, dav1d), so every GStreamer decode path on Windows is hardware-only.
+    # builtin-mjpeg needs just libjpeg and is the one decoder always available.
     meson setup $MESON_OPTS --prefix="$PREFIX" spice-gtk/build spice-gtk \
-        -Dgtk=enabled -Dbuiltin-mjpeg=false -Dopus=enabled \
+        -Dgtk=enabled -Dbuiltin-mjpeg=true -Dopus=enabled \
         -Dwayland-protocols=disabled -Dintrospection=disabled -Dvapi=disabled
     ninja -C spice-gtk/build install
 }
