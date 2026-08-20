@@ -500,10 +500,18 @@ endif
 
 arr_version = meson.project_version().split('.')
 
+# An unset build-id yields a trailing dot ("11.0."), and Windows compares this
+# field to decide upgrade vs downgrade. BUILDID itself stays empty, so the
+# product and install-directory names are unaffected.
+if id != ''
+  windows_build_id = id
+else
+  windows_build_id = '0'
+endif
 conf_data.set('WINDOWS_PRODUCTVERSION', '@0@.@1@.@2@'.format(
   arr_version[0],
   arr_version[1],
-  get_option('build-id')))
+  windows_build_id))
 
 if host_machine.system() == 'windows'
   if host_machine.cpu() != 'x86_64'
