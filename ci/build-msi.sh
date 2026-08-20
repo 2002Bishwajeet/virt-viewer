@@ -78,21 +78,11 @@ stage_gtk() {
     git clone --depth 1 -b "$SPICE_GTK_REF" "$SPICE_GTK_REPO"
     cd spice-gtk
     git submodule update --init --recursive --depth 1
-    # --depth 1 carries no tags, so git-version-gen yields UNKNOWN, and applying the
-    # patch marks the tree dirty -> UNKNOWN-dirty, which fails virt-viewer's
-    # spice-gtk >= 0.35 check. git-version-gen reads .tarball-version verbatim.
-    # 0.43 matches Fedora's package so the DLL sonames line up with the ones
+    # --depth 1 carries no tags, so git-version-gen yields UNKNOWN and fails
+    # virt-viewer's spice-gtk >= 0.35 check; it reads .tarball-version verbatim.
+    # 0.43 matches Fedora's package, so the DLL sonames line up with the ones
     # msitools' spice-gtk3.wxi hardcodes (libspice-client-gtk-3.0-5.dll et al).
     echo 0.43 > .tarball-version
-    # The fork welds gstreamer-wayland-1.0/libva-wayland into the unconditional
-    # GStreamer deps, and neither has a Windows build. Carried here until the guard
-    # lands in the fork's own branch; skipped once it has, so this keeps working.
-    if git apply --check --ignore-whitespace "$SRC/ci/spice-gtk-windows.patch" 2>/dev/null; then
-        git apply --ignore-whitespace "$SRC/ci/spice-gtk-windows.patch"
-        echo "applied ci/spice-gtk-windows.patch"
-    else
-        echo "ci/spice-gtk-windows.patch does not apply (already in the branch?) - skipping"
-    fi
     cd "$WORK"
     meson setup $MESON_OPTS --prefix="$PREFIX" spice-gtk/build spice-gtk \
         -Dgtk=enabled -Dbuiltin-mjpeg=false -Dopus=enabled \
