@@ -108,6 +108,7 @@
       <Directory Id="ProgramMenuFolder">
         <Directory Id="MENUDIR" Name="VirtViewer"/>
       </Directory>
+      <Directory Id="DesktopFolder" Name="Desktop"/>
     </Directory>
 
     <DirectoryRef Id="INSTALLDIR">
@@ -129,6 +130,19 @@
                   Icon="virt-viewer.ico"/>
         <RemoveFolder Id="MENUDIR" On="uninstall"/>
         <RegistryValue Root="HKCU" Key="Software\VirtViewer\remote-viewer-shortcut" Name="installed" Type="integer" Value="1" KeyPath="yes"/>
+      </Component>
+    </DirectoryRef>
+
+    <DirectoryRef Id="DesktopFolder">
+      <!-- No RemoveFolder here: the shortcut is removed with the component, and
+           the desktop itself is not ours to delete. -->
+      <Component Id="CDesktopShortcut" Guid="741A1C48-D5D0-487D-8473-18C693CE6729">
+        <Shortcut Id="ApplicationDesktopShortcut"
+                  Name="Remote viewer"
+                  Description="A SPICE/VNC client"
+                  Target="[INSTALLDIR]\bin\remote-viewer.exe"
+                  Icon="virt-viewer.ico"/>
+        <RegistryValue Root="HKCU" Key="Software\VirtViewer\remote-viewer-desktop-shortcut" Name="installed" Type="integer" Value="1" KeyPath="yes"/>
       </Component>
     </DirectoryRef>
 
@@ -154,6 +168,7 @@
       <ComponentGroupRef Id="CG.virt-viewer"/>
       <ComponentRef Id="CBuildEnvFile"/>
       <ComponentRef Id="CShortcut"/>
+      <ComponentRef Id="CDesktopShortcut"/>
       <ComponentRef Id="CProgIds"/>
       <ComponentRef Id="CUrlProtocols"/>
       <ComponentRef Id="CHwdataUSB"/>
