@@ -39,6 +39,10 @@
   <?endif?>
   <?require libxml2.wxi?>
 
+  <!-- wixl-heat derives file ids from a hash of the install path, so this is
+       remote-viewer.exe. Referenced by the .vv verb and the URL handlers below. -->
+  <?define RemoteViewerExe = "fil610DF9E49759B1DEC646290195F96F8A"?>
+
   <?define UpgradeCode = "5B027138-1A63-49E6-877E-055E5EEC1903"?>
   <Product Id="*"
            Name="VirtViewer @VERSION@@BUILDID@ ($(var.ArchString))"
@@ -65,10 +69,31 @@
       <Component Id="CProgIds" Guid="89D6F46D-9C5E-4D65-8456-58FC361E553E">
         <ProgId Id='VirtViewer.vvfile' Description='VirtViewer connection file'>
           <Extension Id='vv' ContentType='application/x-virt-viewer'>
-            <Verb Id='open' Command='Open' TargetFile='fil610DF9E49759B1DEC646290195F96F8A' Argument='"%1"' />
+            <Verb Id='open' Command='Open' TargetFile='$(var.RemoteViewerExe)' Argument='"%1"' />
             <MIME ContentType="application/x-virt-viewer" Default="yes"/>
           </Extension>
         </ProgId>
+      </Component>
+
+      <!-- remote-viewer takes a URI as its first argument, so the scheme handlers
+           reuse the .vv command line. Without these keys a spice:// link in a
+           browser has nowhere to go. Keep in step with the MimeType= list in
+           data/remote-viewer.desktop.in, which declares the same three schemes. -->
+      <Component Id="CUrlProtocols" Guid="C7684E7B-EA6B-4CC1-8B83-E72D0FCDC578">
+        <RegistryValue Root="HKCR" Key="spice" Value="URL:SPICE Protocol" Type="string" KeyPath="yes"/>
+        <RegistryValue Root="HKCR" Key="spice" Name="URL Protocol" Value="" Type="string"/>
+        <RegistryValue Root="HKCR" Key="spice\DefaultIcon" Value="[#$(var.RemoteViewerExe)],0" Type="string"/>
+        <RegistryValue Root="HKCR" Key="spice\shell\open\command" Value="&quot;[#$(var.RemoteViewerExe)]&quot; &quot;%1&quot;" Type="string"/>
+
+        <RegistryValue Root="HKCR" Key="spice+tls" Value="URL:SPICE Protocol (TLS)" Type="string"/>
+        <RegistryValue Root="HKCR" Key="spice+tls" Name="URL Protocol" Value="" Type="string"/>
+        <RegistryValue Root="HKCR" Key="spice+tls\DefaultIcon" Value="[#$(var.RemoteViewerExe)],0" Type="string"/>
+        <RegistryValue Root="HKCR" Key="spice+tls\shell\open\command" Value="&quot;[#$(var.RemoteViewerExe)]&quot; &quot;%1&quot;" Type="string"/>
+
+        <RegistryValue Root="HKCR" Key="spice+unix" Value="URL:SPICE Protocol (UNIX socket)" Type="string"/>
+        <RegistryValue Root="HKCR" Key="spice+unix" Name="URL Protocol" Value="" Type="string"/>
+        <RegistryValue Root="HKCR" Key="spice+unix\DefaultIcon" Value="[#$(var.RemoteViewerExe)],0" Type="string"/>
+        <RegistryValue Root="HKCR" Key="spice+unix\shell\open\command" Value="&quot;[#$(var.RemoteViewerExe)]&quot; &quot;%1&quot;" Type="string"/>
       </Component>
     </DirectoryRef>
 
@@ -130,6 +155,7 @@
       <ComponentRef Id="CBuildEnvFile"/>
       <ComponentRef Id="CShortcut"/>
       <ComponentRef Id="CProgIds"/>
+      <ComponentRef Id="CUrlProtocols"/>
       <ComponentRef Id="CHwdataUSB"/>
     </Feature>
 
