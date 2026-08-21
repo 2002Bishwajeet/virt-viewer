@@ -86,9 +86,23 @@ if with_msi
     configuration: conf_data
   )
 
+  # wixl's licence dialog names this file itself, and resolves it relative to
+  # the .wxs that mentions it -- so it has to land in the same build directory.
+  license_rtf = custom_target(
+    'License.rtf',
+    input: files('../COPYING'),
+    output: 'License.rtf',
+    command: [
+      python3,
+      license_to_rtf_prog.full_path(),
+      '@INPUT@',
+      '@OUTPUT@',
+    ],
+  )
+
   msi = custom_target(
     msi_filename,
-    input: [wxsfile, buildenv],
+    input: [wxsfile, buildenv, license_rtf],
     output: [msi_filename],
     build_by_default: false,
     command: [

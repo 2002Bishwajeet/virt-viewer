@@ -54,8 +54,18 @@
     <Package InstallerVersion="200" Compressed="yes" Comments="comments" InstallScope="perMachine"/>
     <Media Id="1" Cabinet="cabinet.cab" EmbedCab="yes"/>
 
+    <!-- Welcome, licence, progress and finish pages. WixUI_Minimal is the only
+         chain wixl ships; the variant that lets the user choose an install
+         directory is not among them, so the default of Program Files stands. -->
+    <UIRef Id="WixUI_Minimal"/>
+    <Property Id="WIXUI_EXITDIALOGOPTIONALCHECKBOXTEXT" Value="Launch Remote Viewer"/>
+    <Property Id="WIXUI_EXITDIALOGOPTIONALCHECKBOX" Value="1"/>
+    <CustomAction Id="LaunchApplication" FileKey="$(var.RemoteViewerExe)"
+                  ExeCommand="" Return="asyncNoWait" Impersonate="yes"/>
+
     <Property Id="ARPHELPLINK" Value="https://www.virt-manager.org"/>
-    <Property Id="ARPNOMODIFY" Value="1"/>
+    <!-- ARPNOMODIFY is not set here: WixUI_Minimal already sets it to 1, and a
+         second row with the same key makes wixl fail in libmsi_query_execute. -->
     <Property Id="ARPNOREPAIR" Value="1"/>
     <Property Id="ARPPRODUCTICON" Value="virt-viewer.ico"/>
     <Property Id="ARPURLINFOABOUT" Value="https://www.virt-manager.org"/>
@@ -180,4 +190,14 @@
 
     <Icon Id="virt-viewer.ico" SourceFile="../icons/virt-viewer.ico"/>
   </Product>
+
+  <!-- wixl rejects <UI> inside <Product>, so the one dialog event of our own has
+       to sit in a fragment. It runs the launch action when the finish page is
+       dismissed with the checkbox still ticked, on a fresh install only. -->
+  <Fragment>
+    <UI Id="LaunchUI">
+      <Publish Dialog="ExitDialog" Control="Finish" Event="DoAction" Value="LaunchApplication"
+               Condition="WIXUI_EXITDIALOGOPTIONALCHECKBOX = 1 AND NOT Installed"/>
+    </UI>
+  </Fragment>
 </Wix>

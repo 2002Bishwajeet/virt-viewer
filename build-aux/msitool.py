@@ -74,6 +74,9 @@ def build_msi():
             "-D", "HaveGtkVnc=" + have_vnc,
             "-D", "HaveLibvirt=" + have_libvirt,
             "-D", "HaveOVirt=" + have_ovirt,
+            # Fedora ships wixl's dialog set but does not enable it, so the
+            # installer runs with a bare progress bar unless it is asked for.
+            "--ext", "ui",
             "--arch", arch,
             "-o", msifile,
             wxs, wxsfilelist,

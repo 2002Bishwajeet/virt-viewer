@@ -3,6 +3,7 @@ scripts = [
     'buildenv.py',
     'dist.py',
     'gen-authors.py',
+    'license-to-rtf.py',
     'msitool.py',
     'post_install.py',
     'run-windres.py',
