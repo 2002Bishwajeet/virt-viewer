@@ -40,6 +40,14 @@ stage_deps() {
     rm -f /etc/rpm/macros.image-language-conf
 
     dnf install -y 'dnf-command(builddep)'
+    # librsvg dropped its gdk-pixbuf loader in 2.59 and the updates repo carries
+    # 2.62, but mingw64-gdk-pixbuf's loaders.cache still advertises it. GTK then
+    # believes SVG is supported, prefers Adwaita's .svg icons over its handful of
+    # .png ones, and the failed LoadLibrary becomes a fatal assertion in
+    # gtkiconhelper.c -- remote-viewer.exe aborts before drawing a window. The GA
+    # repo still has 2.57, which ships the loader; pin it before anything else
+    # can pull in 2.62. Ships from stage_caches, which see.
+    dnf install -y mingw64-librsvg2-2.57.1-7.fc44
     # Native tooling. glib2-devel provides glib-compile-resources/schemas, which run
     # on the build host, and msitools brings wixl/wixl-heat plus the prebuilt mingw
     # .wxi component groups. hwdata owns the usb.ids that virt-viewer.wxs.in points at.
@@ -123,6 +131,12 @@ stage_caches() {
     install -d "$VROOT$PREFIX/share/glib-2.0/schemas"
     glib-compile-schemas --targetdir="$VROOT$PREFIX/share/glib-2.0/schemas" \
                          "$PREFIX/share/glib-2.0/schemas"
+
+    # No .wxi group ships the SVG pixbuf loader even though loaders.cache lists
+    # it, so hand it over the same way. Its imports -- gdk-pixbuf, glib, gobject
+    # and librsvg itself -- are all in the MSI already.
+    install -Dm755 "$PREFIX/lib/gdk-pixbuf-2.0/2.10.0/loaders/libpixbufloader-svg.dll" \
+                   "$VROOT$PREFIX/lib/gdk-pixbuf-2.0/2.10.0/loaders/libpixbufloader-svg.dll"
 
     # The icon caches are only a startup-speed win. Built in place and copied out
     # one file at a time, because copying the theme trees in would duplicate files
