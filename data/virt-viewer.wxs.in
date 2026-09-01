@@ -18,10 +18,8 @@
 
   <?if $(var.HaveSpiceGtk) = "True"?>
     <?require spice-gtk3.wxi?>
-    <!-- spice-glib.wxi only pulls in CG.gstreamer1, which is the core library
-         plus coreelements. Without these three groups the MSI ships no
-         playback/typefind plugins (so playbin3 cannot auto-plug anything) and
-         no D3D11/D3D12 decoders (so there is no GPU decode on Windows). -->
+    <!-- spice-glib.wxi pulls in core gstreamer1 only: no playback plugins, no
+         D3D11/D3D12 decoders. -->
     <?require gstreamer1-plugins-base.wxi?>
     <?require gstreamer1-plugins-good.wxi?>
     <?require gstreamer1-plugins-bad-free.wxi?>
@@ -39,8 +37,7 @@
   <?endif?>
   <?require libxml2.wxi?>
 
-  <!-- wixl-heat derives file ids from a hash of the install path, so this is
-       remote-viewer.exe. Referenced by the .vv verb and the URL handlers below. -->
+  <!-- wixl-heat hashes the install path into the file id; this one is remote-viewer.exe. -->
   <?define RemoteViewerExe = "fil610DF9E49759B1DEC646290195F96F8A"?>
 
   <?define UpgradeCode = "5B027138-1A63-49E6-877E-055E5EEC1903"?>
@@ -54,9 +51,7 @@
     <Package InstallerVersion="200" Compressed="yes" Comments="comments" InstallScope="perMachine"/>
     <Media Id="1" Cabinet="cabinet.cab" EmbedCab="yes"/>
 
-    <!-- Welcome, licence, progress and finish pages. WixUI_Minimal is the only
-         chain wixl ships; the variant that lets the user choose an install
-         directory is not among them, so the default of Program Files stands. -->
+    <!-- The only dialog chain wixl ships; no install-directory page among them. -->
     <UIRef Id="WixUI_Minimal"/>
     <Property Id="WIXUI_EXITDIALOGOPTIONALCHECKBOXTEXT" Value="Launch Remote Viewer"/>
     <Property Id="WIXUI_EXITDIALOGOPTIONALCHECKBOX" Value="1"/>
@@ -64,8 +59,7 @@
                   ExeCommand="" Return="asyncNoWait" Impersonate="yes"/>
 
     <Property Id="ARPHELPLINK" Value="https://www.virt-manager.org"/>
-    <!-- ARPNOMODIFY is not set here: WixUI_Minimal already sets it to 1, and a
-         second row with the same key makes wixl fail in libmsi_query_execute. -->
+    <!-- ARPNOMODIFY omitted: WixUI_Minimal sets it, and a duplicate row fails wixl. -->
     <Property Id="ARPNOREPAIR" Value="1"/>
     <Property Id="ARPPRODUCTICON" Value="virt-viewer.ico"/>
     <Property Id="ARPURLINFOABOUT" Value="https://www.virt-manager.org"/>
@@ -85,10 +79,7 @@
         </ProgId>
       </Component>
 
-      <!-- remote-viewer takes a URI as its first argument, so the scheme handlers
-           reuse the .vv command line. Without these keys a spice:// link in a
-           browser has nowhere to go. Keep in step with the MimeType= list in
-           data/remote-viewer.desktop.in, which declares the same three schemes. -->
+      <!-- Keep in step with the MimeType= list in data/remote-viewer.desktop.in. -->
       <Component Id="CUrlProtocols" Guid="C7684E7B-EA6B-4CC1-8B83-E72D0FCDC578">
         <RegistryValue Root="HKCR" Key="spice" Value="URL:SPICE Protocol" Type="string" KeyPath="yes"/>
         <RegistryValue Root="HKCR" Key="spice" Name="URL Protocol" Value="" Type="string"/>
@@ -144,8 +135,7 @@
     </DirectoryRef>
 
     <DirectoryRef Id="DesktopFolder">
-      <!-- No RemoveFolder here: the shortcut is removed with the component, and
-           the desktop itself is not ours to delete. -->
+      <!-- No RemoveFolder: the desktop is not ours to delete. -->
       <Component Id="CDesktopShortcut" Guid="741A1C48-D5D0-487D-8473-18C693CE6729">
         <Shortcut Id="ApplicationDesktopShortcut"
                   Name="Remote viewer"
@@ -191,9 +181,7 @@
     <Icon Id="virt-viewer.ico" SourceFile="../icons/virt-viewer.ico"/>
   </Product>
 
-  <!-- wixl rejects <UI> inside <Product>, so the one dialog event of our own has
-       to sit in a fragment. It runs the launch action when the finish page is
-       dismissed with the checkbox still ticked, on a fresh install only. -->
+  <!-- wixl rejects <UI> inside <Product>, so this event has to sit in a fragment. -->
   <Fragment>
     <UI Id="LaunchUI">
       <Publish Dialog="ExitDialog" Control="Finish" Event="DoAction" Value="LaunchApplication"

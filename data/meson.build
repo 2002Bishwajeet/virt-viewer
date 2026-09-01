@@ -86,8 +86,7 @@ if with_msi
     configuration: conf_data
   )
 
-  # wixl's licence dialog names this file itself, and resolves it relative to
-  # the .wxs that mentions it -- so it has to land in the same build directory.
+  # wixl resolves this name relative to the .wxs, so it must share its directory.
   license_rtf = custom_target(
     'License.rtf',
     input: files('../COPYING'),

@@ -1,12 +1,7 @@
 build-msi:
   stage: build
-  # Fedora is the only distro that packages the mingw64 cross-toolchain and the
-  # mingw .wxi component groups (msitools), so the AppImage job's rockylinux:9
-  # cannot be reused here. Pinned rather than :rawhide because the .wxi files
-  # hardcode DLL sonames and a moving base image silently changes them.
   image: registry.fedoraproject.org/fedora:44
   variables:
-    # Dependency clone refs, same knobs as the AppImage job.
     SPICE_PROTOCOL_REF: "new_video_codecs"
     SPICE_GTK_REF: "queueu_remove_experiment"
   script:

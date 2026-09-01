@@ -1,15 +1,6 @@
 #!/bin/bash
-# msitools ships prebuilt .wxi component groups for the mingw stack, but they are
-# generated at msitools release time and drift from whatever Fedora currently ships.
-# Three failure modes, all fatal to wixl:
-#   1. a .wxi is referenced but not shipped at all           (angleproject, giflib)
-#   2. a shipped .wxi lists files the package no longer has  (gstreamer1-plugins-good
-#                                                             still lists libgsty4menc)
-#   3. a shipped .wxi references a CG whose package was renamed
-#      (openal-soft.wxi wants CG.SDL2; Fedora now ships sdl2-compat)
-# None of this bit before because virt-viewer's MSI never pulled in the GStreamer
-# plugin groups. Regenerate the broken ones with msitools' own wixl-heat, keeping
-# their <?require?> edges so the rest of the closure still gets referenced.
+# msitools' prebuilt .wxi groups drift from what Fedora ships; regenerate the
+# missing, stale and duplicate ones with wixl-heat, keeping their <?require?> edges.
 set -euo pipefail
 
 S=/usr/x86_64-w64-mingw32/sys-root/mingw
@@ -41,8 +32,7 @@ regen() {
     local reqargs=() r
     for r in "$@"; do reqargs+=(--require "$r"); done
     rpm -ql "$pkg" | grep "^$S/" | while read -r f; do [ -f "$f" ] && echo "$f"; done |
-        # -i emits an <Include> root; without it wixl aborts with
-        # "unhandled child Wix node Wix" when the file is included.
+        # -i emits an <Include> root; wixl rejects a bare <Wix> when included.
         wixl-heat -i --var var.SourceDir -p "$S/" --directory-ref INSTALLDIR \
                   --win64 --component-group "CG.$n" "${reqargs[@]}" > "$W/$n.wxi"
 }
@@ -80,11 +70,8 @@ walk() {                            # <?require?> closure from a seed
 
 walk "${roots[@]}"
 
-# Mode 4: a .wxi must only list files its own package owns. msitools' spice-glib.wxi
-# inlines a hand-picked subset of GStreamer plugins (libgstapp, libgstaudioconvert,
-# ...) rather than requiring the plugin packages. Once the real plugin groups are
-# referenced those files appear twice and libmsi fails the duplicate insert. Resync
-# any such wxi from its own package.
+# A .wxi listing another package's files duplicates them once both groups are
+# referenced, and libmsi rejects the duplicate insert -- resync it from its owner.
 pkg_of_name() { rpm -q --whatprovides --queryformat '%{NAME}\n' "mingw64-$1" 2>/dev/null | head -1; }
 
 files=(); for n in "${!inclosure[@]}"; do files+=("$W/$n.wxi"); done
@@ -105,10 +92,8 @@ for n in "${!resync[@]}"; do
     echo "deduped   $n.wxi from ${resync[$n]} (was carrying other packages' files)"
 done
 
-# Fixpoint on ComponentGroupRefs that nothing in the closure defines (mode 3).
-# A standalone <name>.wxi would not help: wixl only pulls in files something
-# <?require?>s. So alias the group inside the file that IS required, picking it by
-# name similarity (sdl2-compat <-> SDL2).
+# Alias ComponentGroupRefs nothing defines (renamed packages: SDL2 -> sdl2-compat)
+# into a file that is actually <?require?>d, since wixl only pulls in what is.
 norm() { echo "$1" | tr 'A-Z' 'a-z' | tr -cd 'a-z0-9'; }
 
 add_alias() {                       # $1 = provider wxi, $2 = alias group name
