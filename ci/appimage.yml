@@ -1,6 +1,3 @@
-# This file is the project's ci_config_path, so it is the only entry point GitLab
-# reads; .gitlab-ci.yml is upstream's and never runs here. Sibling pipelines have
-# to be included from here to exist at all.
 include:
   - local: ci/msi.yml
 

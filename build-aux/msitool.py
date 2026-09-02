@@ -74,7 +74,6 @@ def build_msi():
             "-D", "HaveGtkVnc=" + have_vnc,
             "-D", "HaveLibvirt=" + have_libvirt,
             "-D", "HaveOVirt=" + have_ovirt,
-            # wixl ships the dialog set but does not enable it by default.
             "--ext", "ui",
             "--arch", arch,
             "-o", msifile,

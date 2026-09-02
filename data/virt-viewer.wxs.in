@@ -53,10 +53,6 @@
 
     <!-- The only dialog chain wixl ships; no install-directory page among them. -->
     <UIRef Id="WixUI_Minimal"/>
-    <Property Id="WIXUI_EXITDIALOGOPTIONALCHECKBOXTEXT" Value="Launch Remote Viewer"/>
-    <Property Id="WIXUI_EXITDIALOGOPTIONALCHECKBOX" Value="1"/>
-    <CustomAction Id="LaunchApplication" FileKey="$(var.RemoteViewerExe)"
-                  ExeCommand="" Return="asyncNoWait" Impersonate="yes"/>
 
     <Property Id="ARPHELPLINK" Value="https://www.virt-manager.org"/>
     <!-- ARPNOMODIFY omitted: WixUI_Minimal sets it, and a duplicate row fails wixl. -->
@@ -180,12 +176,4 @@
 
     <Icon Id="virt-viewer.ico" SourceFile="../icons/virt-viewer.ico"/>
   </Product>
-
-  <!-- wixl rejects <UI> inside <Product>, so this event has to sit in a fragment. -->
-  <Fragment>
-    <UI Id="LaunchUI">
-      <Publish Dialog="ExitDialog" Control="Finish" Event="DoAction" Value="LaunchApplication"
-               Condition="WIXUI_EXITDIALOGOPTIONALCHECKBOX = 1 AND NOT Installed"/>
-    </UI>
-  </Fragment>
 </Wix>
