@@ -27,12 +27,26 @@ owner_pkg() {                       # ask rpm about a file the wxi lists that ex
 is_stale() { local f; while read -r f; do [ -e "$S$f" ] || return 0
              done < <(sources_of "$1"); return 1; }
 
+# msitools' groups carry runtime files only; wixl-heat over a whole RPM would add
+# headers and static libs to the installer. Their per-package .ignore sidecars are
+# not in the package, so approximate them.
+runtime_only() {
+    grep -Ev '/include/|\.a$|\.la$|/lib/pkgconfig/|/bin/[^/]*-config$|/share/(man|doc|gtk-doc|info|aclocal|gir-1\.0|vala)/'
+}
+
 regen() {
     local n=$1 pkg=$2; shift 2
     local reqargs=() r
     for r in "$@"; do reqargs+=(--require "$r"); done
-    rpm -ql "$pkg" | grep "^$S/" | while read -r f; do [ -f "$f" ] && echo "$f"; done |
-        # -i emits an <Include> root; wixl rejects a bare <Wix> when included.
+    local files
+    # grep exits 1 on no match, which under pipefail would kill the script here
+    # before the guard below can say which package was empty.
+    files=$(rpm -ql "$pkg" | grep "^$S/" | runtime_only |
+            while read -r f; do [ -f "$f" ] && echo "$f"; done) || true
+    # An empty group installs nothing and fails at runtime, not at build time.
+    [ -n "$files" ] || { echo "!! $pkg contributes no runtime files to $n.wxi" >&2; exit 1; }
+    # -i emits an <Include> root; wixl rejects a bare <Wix> when included.
+    echo "$files" |
         wixl-heat -i --var var.SourceDir -p "$S/" --directory-ref INSTALLDIR \
                   --win64 --component-group "CG.$n" "${reqargs[@]}" > "$W/$n.wxi"
 }
